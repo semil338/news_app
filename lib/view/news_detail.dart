@@ -1,7 +1,6 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:news_app/widgets/appbar_title.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class NewsDetail extends StatefulWidget {
@@ -20,27 +19,19 @@ class _NewsDetailState extends State<NewsDetail> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.black),
         centerTitle: true,
         backgroundColor: const Color(0xFFFAFAFA),
-        title: Text(
-          "Daily News",
-          style: TextStyle(
-            color: Colors.black,
-            fontFamily: GoogleFonts.italianno().fontFamily,
-            fontSize: 30,
-          ),
-        ),
+        title: appBarTitle("Daily News", context),
       ),
-      body: Container(
-        child: WebView(
-          initialUrl: widget.description,
-          javascriptMode: JavascriptMode.unrestricted,
-          onWebViewCreated: (WebViewController webViewController) {
-            setState(() {
-              _controller.complete(webViewController);
-            });
-          },
-        ),
+      body: WebView(
+        initialUrl: widget.description,
+        javascriptMode: JavascriptMode.unrestricted,
+        onWebViewCreated: (WebViewController webViewController) {
+          setState(() {
+            _controller.complete(webViewController);
+          });
+        },
       ),
     );
   }

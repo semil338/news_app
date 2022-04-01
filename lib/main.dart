@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:news_app/widgets/themes.dart';
+import 'package:news_app/repositories/data_repositories.dart';
 import 'package:news_app/services/api.dart';
 import 'package:news_app/services/api_service.dart';
 import 'package:news_app/view/home.dart';
@@ -25,15 +26,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Provider<ApiService>(
-      create: (context) => ApiService(Api.key()),
+    return Provider<DataRepository>(
+      create: (context) => DataRepository(apiService: ApiService(Api.key())),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'News App',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          fontFamily: GoogleFonts.lato().fontFamily,
-        ),
+        theme: MyTheme.lightTheme(),
+        darkTheme: MyTheme.darkTheme(),
+        themeMode: ThemeMode.dark,
         home: const Home(),
       ),
     );

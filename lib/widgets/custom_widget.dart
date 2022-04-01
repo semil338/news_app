@@ -25,12 +25,16 @@ class CustomWidget extends StatelessWidget {
         baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[100]!,
         // period: Duration(seconds: 2),
-        child: Container(
-          width: width,
-          height: height,
-          decoration: ShapeDecoration(
-            color: Colors.grey[400]!,
-            shape: shapeBorder,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            width: width,
+            height: height,
+            decoration: ShapeDecoration(
+              color: Colors.grey[400]!,
+              shape: shapeBorder,
+            ),
           ),
         ),
       );

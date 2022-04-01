@@ -9,14 +9,18 @@ class Api {
   static const String host = "newsapi.org";
   static const String path = "/v2/top-headlines";
 
-  Uri getNewsData(String text) => Uri(
+  Uri getNewsData(String text) => news(text, "category");
+  Uri searchNews(String text) => news(text, "q");
+
+  Uri news(String text, String q) => Uri(
         scheme: "https",
         host: host,
         path: path,
         queryParameters: {
           "apiKey": apiKey,
-          "category": text,
+          q: text,
           "country": "in",
+          // "pageSize": 100,
         },
       );
 }
