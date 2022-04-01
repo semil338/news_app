@@ -1,233 +1,127 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart';
-import 'package:intl/intl.dart';
-import 'package:news_app/custom_widget.dart';
+import 'package:news_app/widgets/appbar_title.dart';
+import 'package:news_app/widgets/category_card.dart';
+import 'package:news_app/widgets/show_alert_dialog.dart';
+import 'package:news_app/model/category_list.dart';
 import 'package:news_app/model/news.dart';
-import 'package:news_app/platform_alert.dart';
-import 'package:news_app/services/api_service.dart';
-import 'package:news_app/view/news_detail.dart';
+import 'package:news_app/repositories/data_repositories.dart';
+import 'package:news_app/widgets/show_news.dart';
+import 'package:news_app/view/category_news_page.dart';
+import 'package:news_app/view/news_search.dart';
 import 'package:provider/provider.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
-
   @override
   _HomeState createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
-  Future<News?>? news;
+  News? news;
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
-    // _getData(text);
+    _getData("General");
   }
 
-  final List<String> _list = [
-    "General",
-    "Business",
-    "Entertainment",
-    "Health",
-    "Science",
-    "Sports",
-    "Technology",
-  ];
   @override
   Widget build(BuildContext context) {
-    final apiService = Provider.of<ApiService>(context, listen: false);
-    return DefaultTabController(
-      length: _list.length,
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.menu, color: Colors.black),
-          ),
-          actions: [
-            IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.search,
-                  color: Colors.black,
-                ))
-          ],
-          title: Text(
-            "Daily News",
-            style: TextStyle(
-                color: Colors.black,
-                fontSize: 30,
-                fontFamily: GoogleFonts.italianno().fontFamily),
-          ),
-          backgroundColor: const Color(0xFFFAFAFA),
-          elevation: 10,
-          centerTitle: true,
-          bottom: TabBar(
-            labelColor: Colors.black,
-            indicatorColor: Colors.black,
-            isScrollable: true,
-            tabs: [
-              for (var item in _list) Tab(text: item),
-            ],
-          ),
-        ),
-        body: TabBarView(
+    return Scaffold(
+      backgroundColor: Theme.of(context).canvasColor,
+      appBar: appBar(context),
+      body: RefreshIndicator(
+        onRefresh: () => _getData("General"),
+        child: Column(
           children: [
-            for (var item in _list)
-              RefreshIndicator(
-                  onRefresh: () => apiService.getNewsData(item),
-                  child: showNews(apiService, item))
+            categoryCard(),
+            Expanded(child: ShowNews(news: news, isLoading: _isLoading))
           ],
         ),
       ),
     );
   }
 
-  Future<void> _getData(String text, ApiService apiService) async {
-    try {} on SocketException catch (e) {
-      PlatformAlertDialog(
-        title: "Error",
-        content: e.message,
-        defaultActionText: "Ok",
-      );
+  Future<void> _getData(String text) async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      final dataRepo = Provider.of<DataRepository>(context, listen: false);
+      final data = await dataRepo.getNewsData(text);
+      setState(() {
+        news = data;
+        _isLoading = false;
+      });
+    } on SocketException catch (_) {
+      showAlertDialog(
+          context: context,
+          title: "Connection Error",
+          content: "Could not retrieve data.Please try again later.",
+          defaultTextAction: "OK");
     } catch (_) {
-      PlatformAlertDialog(
+      showAlertDialog(
+        context: context,
         title: "Unknown Error",
         content: "Please contact support or try again later.",
-        defaultActionText: "OK",
+        defaultTextAction: "OK",
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  Widget showNews(ApiService apiService, String text) {
-    return FutureBuilder<News?>(
-      future: news,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          if (snapshot.data == null) {
-            return const Center(
-                child: Text(
-              "Something went wrong\nPlease Try Again Later",
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.grey,
-              ),
-            ));
-          } else {
-            final article = snapshot.data!.articles;
-            return ListView.builder(
-              itemBuilder: (context, index) {
-                String? author = article![index].author ?? "Unknown";
-                String img = article[index].urlToImage.toString();
-                String title = article[index].title.toString();
-                String description = article[index].url.toString();
-
-                DateTime now =
-                    DateTime.parse(article[index].publishedAt.toString())
-                        .toLocal();
-                String date = DateFormat.yMMMd().format(now);
-                String time = DateFormat.jm().format(now);
-                String date1 = date + " " + time;
-
-                return listWidget(
-                  author: author,
-                  date: date1,
-                  img: img,
-                  title: title,
-                  context: context,
-                  newsDescription: description,
-                );
-              },
-              itemCount: article!.length,
+  AppBar appBar(BuildContext context) {
+    return AppBar(
+      leading: IconButton(
+        onPressed: () {},
+        icon: const Icon(Icons.menu),
+      ),
+      actions: [
+        IconButton(
+          onPressed: () async {
+            final str = await showSearch(
+              context: context,
+              delegate: NewsSearch(),
             );
-          }
-        } else if (snapshot.connectionState == ConnectionState.waiting) {
-          return ListView.builder(
-            itemCount: 10,
-            itemBuilder: (context, index) => ListTile(
-              leading: const CustomWidget.circular(height: 80, width: 80),
-              title: Align(
-                alignment: Alignment.centerLeft,
-                child: CustomWidget.rectangular(
-                  height: 16,
-                  width: MediaQuery.of(context).size.width * 0.3,
+            if (str != null) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => CategoryNewsPage(
+                    category: str.toString(),
+                    isSearch: true,
+                  ),
                 ),
-              ),
-              subtitle: const CustomWidget.rectangular(height: 14),
-            ),
-          );
-        } else if (snapshot.connectionState == ConnectionState.none) {
-          return const Text("None");
-        } else {
-          return const Text("Error");
-        }
-      },
+              );
+            }
+          },
+          icon: const Icon(
+            Icons.search,
+          ),
+        )
+      ],
+      title: appBarTitle("Daily News", context),
     );
   }
-}
 
-Widget listWidget(
-    {required String img,
-    required String title,
-    required String date,
-    required String author,
-    required BuildContext context,
-    required String newsDescription}) {
-  return InkWell(
-    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => NewsDetail(
-        description: newsDescription,
+  Widget categoryCard() {
+    return Container(
+      height: 70,
+      margin: const EdgeInsets.all(10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        shrinkWrap: true,
+        itemBuilder: (context, index) {
+          return CategoryCard(
+            categoryName: list[index],
+            imageAssetUrl: img[index],
+          );
+        },
+        itemCount: list.length,
       ),
-    )),
-    child: Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 20),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Container(
-              height: 80,
-              width: 80,
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(img),
-                  fit: BoxFit.cover,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            const SizedBox(width: 5),
-            Expanded(
-                child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Icon(Icons.date_range),
-                    Container(
-                        margin: const EdgeInsets.only(left: 8),
-                        child:
-                            Text(date, style: const TextStyle(fontSize: 13))),
-                  ],
-                ),
-              ],
-            )),
-          ],
-        ),
-      ),
-    ),
-  );
+    );
+  }
 }
