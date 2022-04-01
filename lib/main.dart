@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         title: 'News App',
         theme: MyTheme.lightTheme(),
         darkTheme: MyTheme.darkTheme(),
-        themeMode: ThemeMode.dark,
+        themeMode: ThemeMode.light,
         home: const Home(),
       ),
     );

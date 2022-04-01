@@ -26,6 +26,8 @@ class CategoryCard extends StatelessWidget {
               child: Opacity(
                 opacity: 0.7,
                 child: CachedNetworkImage(
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
                   imageUrl: imageAssetUrl,
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                   height: 60,
